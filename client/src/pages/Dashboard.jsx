@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orgApi, sessionApi, aiApi, githubApi } from '../api/index.js';
+import { orgApi, repoApi, sessionApi, aiApi, githubApi } from '../api/index.js';
 
 export default function Dashboard() {
   const [orgs, setOrgs] = useState([]);
+  const [repos, setRepos] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [provider, setProvider] = useState('mock');
   const [gh, setGh] = useState(false);
@@ -12,13 +13,15 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [o, s, p, g] = await Promise.all([
+        const [o, r, s, p, g] = await Promise.all([
           orgApi.list(),
+          repoApi.list().catch(() => ({ repos: [] })),
           sessionApi.list({ status: 'active' }),
           aiApi.provider().catch(() => ({ provider: 'mock' })),
           githubApi.status().catch(() => ({ configured: false })),
         ]);
         setOrgs(o.orgs);
+        setRepos(r.repos || []);
         setSessions(s.sessions);
         setProvider(p.provider);
         setGh(g.configured);
@@ -51,7 +54,7 @@ export default function Dashboard() {
       <div className="grid cols-3" style={{ marginBottom: 20 }}>
         <StatCard label="Organisations"  value={orgs.length}            icon="🏢" to="/orgs" />
         <StatCard label="Active sessions" value={sessions.length}       icon="●"  to="/sessions" accent="mint" />
-        <StatCard label="Repositories"   value={orgs.length ? '—' : 0} icon="⌥"  to="/repos" accent="violet" />
+        <StatCard label="Repositories"   value={repos.length}          icon="⌥"  to="/repos" accent="violet" />
       </div>
 
       <div className="grid cols-2">

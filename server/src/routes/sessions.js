@@ -138,7 +138,12 @@ router.patch(
     if (!updated) throw HttpError.notFound('Failed to update comment');
 
     // Broadcast updated comment via socket so live clients sync
-    req.app.get('io')?.of('/sessions').to(sessionId).emit('comment:update', updated);
+    const io = req.app.get('io');
+    if (!io) {
+      console.warn('[warning] Socket.IO instance not set on Express app. Real-time comment:update event not broadcasted.');
+    } else {
+      io.of('/sessions').to(sessionId).emit('comment:update', updated);
+    }
 
     res.json({ comment: updated });
   })

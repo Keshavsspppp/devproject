@@ -27,8 +27,8 @@ function onSpotlightMove(e) {
   }
 }
 
-function onSpotlightLeave() {
-  if (spotlightCard) {
+function onSpotlightOut(e) {
+  if (spotlightCard && !spotlightCard.contains(e.relatedTarget)) {
     spotlightCard.style.removeProperty('--mx');
     spotlightCard.style.removeProperty('--my');
     spotlightCard = null;
@@ -52,8 +52,8 @@ function onTiltMove(e) {
   el.style.transition = 'transform 0.08s ease';
 }
 
-function onTiltLeave() {
-  if (tiltEl) {
+function onTiltOut(e) {
+  if (tiltEl && !tiltEl.contains(e.relatedTarget)) {
     tiltEl.style.transform = '';
     tiltEl.style.transition = 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
     tiltEl = null;
@@ -62,6 +62,6 @@ function onTiltLeave() {
 
 // ── Register ─────────────────────────────────────────────────────
 document.addEventListener('mousemove', onSpotlightMove, { passive: true });
-document.addEventListener('mouseleave', onSpotlightLeave, { passive: true });
+document.addEventListener('mouseout', onSpotlightOut, { passive: true });
 document.addEventListener('mousemove', onTiltMove, { passive: true });
-document.addEventListener('mouseleave', onTiltLeave, { passive: true });
+document.addEventListener('mouseout', onTiltOut, { passive: true });

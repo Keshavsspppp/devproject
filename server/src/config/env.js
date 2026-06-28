@@ -11,9 +11,11 @@ const bool = (v, def = false) => {
   return String(v).toLowerCase() === 'true';
 };
 
+const isProd = (process.env.NODE_ENV || 'development').trim() === 'production';
+
 export const env = {
   nodeEnv: (process.env.NODE_ENV || 'development').trim(),
-  isProd: (process.env.NODE_ENV || 'development').trim() === 'production',
+  isProd,
   port: Number(process.env.PORT) || 4001,
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
 
@@ -26,7 +28,7 @@ export const env = {
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-me',
     accessTtl: process.env.JWT_ACCESS_TTL || '15m',
     refreshTtl: process.env.JWT_REFRESH_TTL || '7d',
-    cookieSecure: bool(process.env.COOKIE_SECURE, false),
+    cookieSecure: bool(process.env.COOKIE_SECURE, isProd),
   },
 
   github: {

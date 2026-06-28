@@ -121,10 +121,13 @@ export function registerSessionHandlers(io) {
     });
 
     // Pure broadcast channel for comments; persistence is handled by the REST API.
-    socket.on('comment:add', (comment) => {
+    socket.on('comment:add', async ({ commentId }) => {
       const sid = socket.data.sessionId;
       if (!sid) return;
-      socket.to(sid).emit('comment:add', comment);
+      const comment = await store.findCommentById(commentId).catch(() => null);
+      if (comment && String(comment.session) === String(sid)) {
+        socket.to(sid).emit('comment:add', comment);
+      }
     });
 
     socket.on('comment:update', async ({ id, ...patch }, ack) => {

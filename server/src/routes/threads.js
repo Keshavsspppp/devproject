@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/HttpError.js';
-import { attachUser, requireAuth, resolveOrgRole } from '../middleware/auth.js';
+import { attachUser, requireAuth, resolveOrgRole, requireMembership } from '../middleware/auth.js';
 import { store } from '../db/repo.js';
 
 const router = Router();
@@ -21,6 +21,8 @@ router.get(
 // get one thread
 router.get(
   '/:threadId',
+  resolveOrgRole,
+  requireMembership,
   asyncHandler(async (req, res) => {
     const t = await store.findThreadById(req.params.threadId);
     if (!t) throw HttpError.notFound('Thread not found');
@@ -32,6 +34,7 @@ router.get(
 router.post(
   '/',
   resolveOrgRole,
+  requireMembership,
   asyncHandler(async (req, res) => {
     const { orgId, repoId, sessionId, title, body, file, line, tags } = req.body;
     if (!orgId || !repoId || !title) throw HttpError.badRequest('orgId, repoId, title required');
@@ -54,6 +57,7 @@ router.post(
 router.post(
   '/:threadId/replies',
   resolveOrgRole,
+  requireMembership,
   asyncHandler(async (req, res) => {
     const { body, source = 'human' } = req.body;
     if (!body) throw HttpError.badRequest('body required');
@@ -71,6 +75,7 @@ router.post(
 router.patch(
   '/:threadId',
   resolveOrgRole,
+  requireMembership,
   asyncHandler(async (req, res) => {
     const { status } = req.body;
     const thread = await store.setThreadStatus(req.params.threadId, status);

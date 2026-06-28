@@ -48,14 +48,12 @@ export function setAuthCookies(res, { access, refresh }) {
   const opts = cookieOpts();
   res.cookie(ACCESS_COOKIE, access, { ...opts, maxAge: ms(env.jwt.accessTtl) });
   res.cookie(REFRESH_COOKIE, refresh, { ...opts, maxAge: ms(env.jwt.refreshTtl) });
-  res.cookie('ws_token', access, { ...opts, httpOnly: false, maxAge: ms(env.jwt.accessTtl) });
 }
 
 export function clearAuthCookies(res) {
   const opts = cookieOpts();
   res.clearCookie(ACCESS_COOKIE, opts);
   res.clearCookie(REFRESH_COOKIE, opts);
-  res.clearCookie('ws_token', { ...opts, httpOnly: false });
 }
 
 export { ACCESS_COOKIE, REFRESH_COOKIE };

@@ -22,10 +22,7 @@ export function useSessionSocket(sessionId, { onComment, onCommentUpdate, onReac
 
   useEffect(() => {
     if (!sessionId) return;
-    // Retrieve the non-HttpOnly ws_token cookie for authentication during socket handshake
-    const token = getCookie('ws_token');
     const socket = io('/sessions', {
-      auth: { token },
       withCredentials: true,
       transports: ['websocket', 'polling'],
     });

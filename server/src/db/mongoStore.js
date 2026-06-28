@@ -169,7 +169,7 @@ export const mongoStore = {
     );
   },
   async findCommentById(id) {
-    return toObj(await Comment.findById(id));
+    return toObj(await Comment.findById(id).populate('author', 'name email avatarUrl'));
   },
   async addReaction(commentId, emoji, userId) {
     const comment = await Comment.findById(commentId);

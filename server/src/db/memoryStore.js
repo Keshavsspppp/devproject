@@ -448,7 +448,7 @@ export const memoryStore = {
   async findCommentById(id) {
     const db = await getDb();
     const c = db.comments.get(String(id));
-    return c ? clone(c) : null;
+    return c ? clone({ ...c, author: populateUser(db, c.author) }) : null;
   },
   async addReaction(commentId, emoji, userId) {
     const db = await getDb();

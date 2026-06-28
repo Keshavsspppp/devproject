@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { sessionApi, threadApi } from '../api/index.js';
 import { apiError } from '../api/http.js';
@@ -34,7 +34,7 @@ export default function Session() {
       setComments((cs) => cs.map((x) => (x._id === commentId ? { ...x, reactions } : x))),
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [{ session }, { comments }] = await Promise.all([
@@ -48,11 +48,11 @@ export default function Session() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionId]);
 
   useEffect(() => {
     load();
-  }, [sessionId]);
+  }, [load]);
 
   const file = session?.files?.[activeFileIdx];
 
@@ -79,7 +79,7 @@ export default function Session() {
       };
       const { comment } = await sessionApi.addComment(sessionId, payload);
       setComments((cs) => (cs.some((x) => x._id === comment._id) ? cs : [...cs, comment]));
-      send('comment:add', comment);
+      send('comment:add', { commentId: comment._id });
       setDraft({ open: false, line: null, text: '', severity: 'info' });
     } catch (e) {
       toast(apiError(e), 'error');
@@ -94,7 +94,7 @@ export default function Session() {
         file: file?.path || '',
       });
       setComments((cs) => (cs.some((x) => x._id === comment._id) ? cs : [...cs, comment]));
-      send('comment:add', comment);
+      send('comment:add', { commentId: comment._id });
     } catch (e) {
       toast(apiError(e), 'error');
     }
