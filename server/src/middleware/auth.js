@@ -35,7 +35,7 @@ export const requireAuth = (req, _res, next) => {
  */
 export async function resolveOrgRole(req, _res, next) {
   try {
-    let orgId = req.params.orgId || req.body.orgId;
+    let orgId = req.params.orgId || req.body.orgId || req.query.orgId;
     if (!orgId && req.params.repoId) {
       const repo = await store.findRepoById(req.params.repoId);
       if (repo) orgId = repo.org;

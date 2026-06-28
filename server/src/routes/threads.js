@@ -11,8 +11,11 @@ router.use(attachUser, requireAuth);
 // list threads
 router.get(
   '/',
+  resolveOrgRole,
+  requireMembership,
   asyncHandler(async (req, res) => {
     const { orgId, repoId, sessionId, status } = req.query;
+    if (!orgId) throw HttpError.badRequest('orgId query parameter required');
     const threads = await store.listThreads({ orgId, repoId, sessionId, status });
     res.json({ threads });
   })
