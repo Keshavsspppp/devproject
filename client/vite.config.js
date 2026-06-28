@@ -14,6 +14,14 @@ export default defineConfig({
         target: 'http://127.0.0.1:4001',
         changeOrigin: true,
         ws: true,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            if (err.code === 'ECONNRESET' || err.code === 'ECONNABORTED') {
+              return; // Silence harmless client-disconnect warnings
+            }
+            console.error('WebSocket proxy error:', err);
+          });
+        },
       },
     },
   },
