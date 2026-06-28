@@ -1,25 +1,32 @@
 import { useState } from 'react';
-import { initials } from './PresenceStack.jsx';
 import Markdown from './Markdown.jsx';
 
 const SEVERITY = {
-  info: { label: 'info', cls: '' },
-  nit: { label: 'nit', cls: 'blue' },
+  info: { label: 'info', cls: 'muted' },
+  nit: { label: 'nit', cls: 'accent' },
   suggestion: { label: 'suggestion', cls: 'amber' },
   blocking: { label: 'blocking', cls: 'red' },
 };
 
+const initials = (name) => {
+  return (name || '?')
+    .split(/\s|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join('');
+};
+
 export default function CommentList({ comments = [], onReply, onResolve, onReact, me, canModerate = false }) {
-  // build a tree: top-level + replies
   const roots = comments.filter((c) => !c.parent);
   const repliesOf = (id) => comments.filter((c) => String(c.parent) === String(id));
 
   if (comments.length === 0) {
-    return <div className="muted" style={{ fontSize: 13 }}>No comments yet. Click ▸ on a diff line to add one.</div>;
+    return <div className="muted" style={{ fontSize: 13, padding: '8px 0' }}>No comments yet. Click a line number to start a discussion.</div>;
   }
 
   return (
-    <div className="col">
+    <div className="col" style={{ gap: 16 }}>
       {roots.map((c) => (
         <CommentItem
           key={c._id}
@@ -49,47 +56,52 @@ function CommentItem({ comment, replies, onReply, onResolve, onReact, me, canMod
   };
 
   return (
-    <div className="card" style={{ padding: 12, opacity: comment.resolved ? 0.6 : 1 }}>
-      <div className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
+    <div className="card" style={{ padding: 16, opacity: comment.resolved ? 0.5 : 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="row" style={{ alignItems: 'flex-start', gap: 12 }}>
         <span className="avatar">{initials(comment.author?.name)}</span>
         <div className="grow">
-          <div className="row" style={{ flexWrap: 'wrap' }}>
-            <strong>{comment.author?.name || 'Someone'}</strong>
-            <span className={`badge ${sev.cls}`} style={{ textTransform: 'none' }}>{sev.label}</span>
-            {comment.source === 'ai' && <span className="badge purple" style={{ textTransform: 'none' }}>ai</span>}
-            {comment.resolved && <span className="badge green">resolved</span>}
-            <span className="muted" style={{ fontSize: 11 }}>{timeAgo(comment.createdAt)}</span>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13.5 }}>
+              {comment.author?.name || 'Someone'}
+            </span>
+            <span className={`badge ${sev.cls}`} style={{ textTransform: 'none', height: 18, fontSize: 10 }}>{sev.label}</span>
+            {comment.source === 'ai' && <span className="badge accent" style={{ textTransform: 'none', height: 18, fontSize: 10 }}>AI</span>}
+            {comment.resolved && <span className="badge green" style={{ height: 18, fontSize: 10 }}>Resolved</span>}
+            <span className="muted" style={{ fontSize: 11, marginLeft: 'auto' }}>{timeAgo(comment.createdAt)}</span>
           </div>
           {comment.file && (
-            <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+            <div className="muted" style={{ fontSize: 11, marginTop: 4, fontFamily: 'var(--font-mono)' }}>
               {comment.file}
-              {comment.lineFrom ? `:${comment.lineFrom}${comment.lineTo && comment.lineTo !== comment.lineFrom ? `-${comment.lineTo}` : ''}` : ''}
+              {comment.lineFrom ? `:${comment.lineFrom}` : ''}
             </div>
           )}
-          <div style={{ marginTop: 6 }}>
+          <div style={{ marginTop: 8, fontSize: 13.5, color: 'var(--text-primary)' }}>
             <Markdown>{comment.body}</Markdown>
           </div>
         </div>
       </div>
 
       {replies?.length > 0 && (
-        <div className="col" style={{ marginLeft: 38, marginTop: 8, gap: 8, paddingLeft: 12, borderLeft: '2px solid var(--border)' }}>
+        <div className="col" style={{ marginLeft: 40, gap: 12, paddingLeft: 14, borderLeft: '1px solid var(--border)' }}>
           {replies.map((r) => (
-            <div key={r._id} className="row" style={{ alignItems: 'flex-start', gap: 8 }}>
-              <span className="avatar" style={{ width: 22, height: 22, fontSize: 10 }}>{initials(r.author?.name)}</span>
-              <div>
-                <div className="row">
-                  <strong style={{ fontSize: 13 }}>{r.author?.name}</strong>
-                  <span className="muted" style={{ fontSize: 11 }}>{timeAgo(r.createdAt)}</span>
+            <div key={r._id} className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
+              <span className="avatar" style={{ width: 22, height: 22, fontSize: 9 }}>{initials(r.author?.name)}</span>
+              <div className="grow">
+                <div className="row" style={{ gap: 8 }}>
+                  <span style={{ fontWeight: 600, fontSize: 12.5, color: 'var(--text-primary)' }}>{r.author?.name}</span>
+                  <span className="muted" style={{ fontSize: 10 }}>{timeAgo(r.createdAt)}</span>
                 </div>
-                <Markdown>{r.body}</Markdown>
+                <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--text-primary)' }}>
+                  <Markdown>{r.body}</Markdown>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
-      {/* Reactions */}
-      <div className="row" style={{ marginTop: 8, gap: 6, flexWrap: 'wrap' }}>
+
+      {/* Reactions Row */}
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
         {['👍', '❤️', '🎉', '😄'].map((emoji) => {
           const userIds = comment.reactions?.[emoji] || [];
           const count = userIds.length;
@@ -97,52 +109,68 @@ function CommentItem({ comment, replies, onReply, onResolve, onReact, me, canMod
           return (
             <button
               key={emoji}
-              className={`badge ${hasReacted ? 'primary' : 'ghost'}`}
+              className="btn btn-ghost"
               style={{
-                padding: '2px 8px',
+                height: 24,
+                padding: '0 8px',
+                borderRadius: '12px',
                 fontSize: 12,
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
-                borderRadius: 12,
-                textTransform: 'none',
-                height: 24,
-                border: hasReacted ? 'none' : '1px solid var(--border)',
-                background: hasReacted ? 'var(--primary)' : 'transparent',
+                background: hasReacted ? 'var(--accent-subtle)' : 'transparent',
+                borderColor: hasReacted ? 'var(--accent)' : 'var(--border)',
+                color: hasReacted ? 'var(--accent)' : 'var(--text-secondary)'
               }}
               onClick={() => onReact?.(comment._id, emoji)}
             >
               <span>{emoji}</span>
-              {count > 0 && <span style={{ fontWeight: 600 }}>{count}</span>}
+              {count > 0 && <span style={{ fontWeight: 600, fontSize: 10 }}>{count}</span>}
             </button>
           );
         })}
       </div>
 
-      <div className="row" style={{ marginTop: 8, gap: 8 }}>
-        <button className="ghost" style={{ padding: '4px 10px' }} onClick={() => setReplying((v) => !v)}>
+      <div className="row" style={{ gap: 8, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+        <button
+          className="btn btn-ghost"
+          style={{ height: 28, fontSize: 12, padding: '0 10px' }}
+          onClick={() => setReplying((v) => !v)}
+        >
           Reply
         </button>
         {canModerate && !comment.resolved && (
-          <button className="ghost" style={{ padding: '4px 10px' }} onClick={() => onResolve?.(comment)}>
+          <button
+            className="btn btn-ghost"
+            style={{ height: 28, fontSize: 12, padding: '0 10px' }}
+            onClick={() => onResolve?.(comment)}
+          >
+            Resolve
+          </button>
+        )}
+        {canModerate && comment.resolved && (
+          <button
+            className="btn btn-ghost"
+            style={{ height: 28, fontSize: 12, padding: '0 10px', textDecoration: 'line-through' }}
+            disabled
+          >
             Resolve
           </button>
         )}
       </div>
 
       {replying && (
-        <div className="col" style={{ marginTop: 8, gap: 8 }}>
+        <div className="col" style={{ gap: 8, marginTop: 4 }}>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Write a reply…"
             rows={2}
-            style={{ fontSize: 13 }}
+            style={{ fontSize: 13, minHeight: 60 }}
           />
-          <div className="row">
-            <button className="primary" style={{ padding: '5px 12px' }} onClick={submit}>Send</button>
-            <button className="ghost" style={{ padding: '5px 12px' }} onClick={() => setReplying(false)}>Cancel</button>
+          <div className="row" style={{ gap: 8 }}>
+            <button className="primary" style={{ height: 28, padding: '0 12px' }} onClick={submit}>Send</button>
+            <button className="ghost" style={{ height: 28, padding: '0 12px' }} onClick={() => setReplying(false)}>Cancel</button>
           </div>
         </div>
       )}

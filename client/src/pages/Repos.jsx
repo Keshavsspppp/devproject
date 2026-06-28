@@ -5,6 +5,14 @@ import { apiError } from '../api/http.js';
 import { toast } from '../components/Toast.jsx';
 import Empty from '../components/Empty.jsx';
 
+const SkeletonLoader = () => (
+  <div className="col" style={{ gap: 8 }}>
+    {[1, 2, 3].map((n) => (
+      <div key={n} className="list-row skeleton" style={{ height: 60, border: 'none' }} />
+    ))}
+  </div>
+);
+
 export default function Repos() {
   const [repos, setRepos] = useState([]);
   const [orgs, setOrgs] = useState([]);
@@ -43,21 +51,22 @@ export default function Repos() {
 
   return (
     <div>
-      <div className="topbar">
+      <div className="page-header">
         <div>
           <h1>Repositories</h1>
-          <div className="muted">Connect repos and open them for review</div>
+          <div className="page-subtitle">Connect repos and open them for review</div>
         </div>
-        <button className="primary" onClick={() => setCreating((v) => !v)}>
+        <button className={creating ? 'btn' : 'primary'} onClick={() => setCreating((v) => !v)}>
           {creating ? 'Cancel' : '+ Add repository'}
         </button>
       </div>
 
       {creating && (
-        <form className="card" style={{ marginBottom: 20 }} onSubmit={submit}>
-          <div className="grid cols-3">
-            <div>
-              <label className="muted">Organisation</label>
+        <form className="card col" style={{ marginBottom: 24, padding: 20, gap: 16 }} onSubmit={submit}>
+          <h2 style={{ fontSize: 14, fontWeight: 600 }}>Add new repository</h2>
+          <div className="grid cols-3" style={{ gap: 16 }}>
+            <div className="col" style={{ gap: 6 }}>
+              <label className="muted" style={{ fontSize: 12, fontWeight: 500 }}>Organisation</label>
               <select value={form.orgId} onChange={(e) => setForm({ ...form, orgId: e.target.value })} required>
                 <option value="">Select…</option>
                 {orgs.map((o) => (
@@ -65,36 +74,38 @@ export default function Repos() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="muted">Name</label>
+            <div className="col" style={{ gap: 6 }}>
+              <label className="muted" style={{ fontSize: 12, fontWeight: 500 }}>Repository Name</label>
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="platform" required />
             </div>
-            <div>
-              <label className="muted">Full name (owner/name)</label>
+            <div className="col" style={{ gap: 6 }}>
+              <label className="muted" style={{ fontSize: 12, fontWeight: 500 }}>Full Name (owner/name)</label>
               <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} placeholder="devcollab/platform" />
             </div>
           </div>
-          <button className="primary" type="submit" style={{ marginTop: 12 }}>Add</button>
+          <button className="primary" type="submit" style={{ width: 'fit-content', height: 32 }}>Add Repository</button>
         </form>
       )}
 
       {loading ? (
-        <div className="muted">Loading…</div>
+        <SkeletonLoader />
       ) : repos.length === 0 ? (
         <Empty icon="📦" title="No repositories yet" sub="Add one to start reviewing pull requests." />
       ) : (
-        repos.map((r) => (
-          <Link key={r._id} to={`/repos/${r._id}`} className="list-row clickable" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <span style={{ fontSize: 20 }}>📦</span>
-            <div className="grow">
-              <div style={{ fontWeight: 600 }}>{r.fullName || r.name}</div>
-              <div className="muted" style={{ fontSize: 12 }}>
-                {r.provider} · default branch {r.defaultBranch}
+        <div className="col" style={{ gap: 8 }}>
+          {repos.map((r) => (
+            <Link key={r._id} to={`/repos/${r._id}`} className="list-row clickable" style={{ textDecoration: 'none', color: 'inherit', margin: 0, padding: '12px 16px' }}>
+              <span style={{ fontSize: 16 }}>📦</span>
+              <div className="grow" style={{ marginLeft: 4 }}>
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)' }}>{r.fullName || r.name}</div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  {r.provider} · default branch {r.defaultBranch}
+                </div>
               </div>
-            </div>
-            <span className={`badge ${r.provider === 'github' ? 'green' : 'blue'}`}>{r.provider}</span>
-          </Link>
-        ))
+              <span className={`badge ${r.provider === 'github' ? 'green' : 'accent'}`} style={{ fontSize: 10 }}>{r.provider}</span>
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

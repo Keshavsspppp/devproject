@@ -3,10 +3,6 @@ import { streamReview } from '../api/aiStream.js';
 import { aiApi } from '../api/index.js';
 import Markdown from './Markdown.jsx';
 
-/**
- * AI review assistant panel.
- * Streams a review of the currently selected code (or whole snippet).
- */
 export default function AIPanel({ code, language }) {
   const [provider, setProvider] = useState('mock');
   const [instruction, setInstruction] = useState('');
@@ -44,8 +40,6 @@ export default function AIPanel({ code, language }) {
           setStatus('done');
         }
       }
-      // Use a local flag, not `status` — the closure captures the render-time
-      // value, which would clobber a just-set error state with 'done'.
       if (!errored) setStatus('done');
     } catch (e) {
       if (e.name !== 'AbortError') {
@@ -63,29 +57,38 @@ export default function AIPanel({ code, language }) {
   };
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="card col" style={{ padding: 20, gap: 14 }}>
       <div className="row between">
-        <h3 style={{ margin: 0 }}>🤖 AI Review Assistant</h3>
-        <span className={`badge ${provider === 'mock' ? 'amber' : 'purple'}`}>{provider}</span>
+        <h2 style={{ fontSize: 14, fontWeight: 600 }}>🤖 AI Review Assistant</h2>
+        <span className={`badge ${provider === 'mock' ? 'amber' : 'accent'}`} style={{ fontSize: 10 }}>{provider}</span>
       </div>
 
       <input
-        placeholder="Optional: focus the review (e.g. ‘look for race conditions’)"
+        placeholder="Focus review (e.g. ‘look for race conditions’)"
         value={instruction}
         onChange={(e) => setInstruction(e.target.value)}
+        style={{ fontSize: 13 }}
       />
 
-      <div className="row">
-        <button className="primary" onClick={run} disabled={!code?.trim() || status === 'streaming'}>
+      <div className="row" style={{ gap: 8 }}>
+        <button
+          className="btn btn-primary"
+          style={{ height: 32, flex: 1 }}
+          onClick={run}
+          disabled={!code?.trim() || status === 'streaming'}
+        >
           {status === 'streaming' ? <span className="spinner" /> : '✨ Review selected code'}
         </button>
         {status === 'streaming' && (
-          <button className="ghost danger" onClick={stop}>Stop</button>
+          <button className="btn btn-danger" style={{ height: 32 }} onClick={stop}>Stop</button>
         )}
+      </div>
+
+      <div className="row between" style={{ marginTop: -4 }}>
         {code?.trim() ? (
-          <span className="muted" style={{ fontSize: 12 }}>{code.length} chars ready</span>
+          <span className="muted" style={{ fontSize: 11, fontWeight: 500 }}>{code.length} characters selected</span>
         ) : (
-          <span className="muted" style={{ fontSize: 12 }}>
+          <span className="muted" style={{ fontSize: 11, fontWeight: 500 }}>
             Select code in the diff, or pick a file to review.
           </span>
         )}
@@ -93,17 +96,15 @@ export default function AIPanel({ code, language }) {
 
       <div className="ai-stream">
         {output ? (
-          <div className={status === 'streaming' ? 'cursor-blink' : ''}>
+          <div className={status === 'streaming' ? 'cursor-blink' : ''} style={{ fontSize: 13, color: 'var(--text-primary)' }}>
             <Markdown>{output}</Markdown>
           </div>
         ) : (
-          <div className="muted" style={{ fontSize: 13 }}>
-            Highlight any code block to get a streamed, Markdown-formatted review — bug detection,
-            complexity analysis and improvement tips.
+          <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+            Highlight any code block in the diff editor to get an instant, AI-streamed Markdown review detailing bugs, complexities, and improvement suggestions.
             {provider === 'mock' && (
-              <div style={{ marginTop: 8 }}>
-                Running the mock provider. Set <span className="kbd">AI_PROVIDER=gemini</span> or
-                <span className="kbd">groq</span> + an API key on the server for real LLM reviews.
+              <div style={{ marginTop: 8, padding: 8, background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                Using mock provider. Set <span className="kbd">AI_PROVIDER=gemini</span> or <span className="kbd">groq</span> + API keys on the server env.
               </div>
             )}
           </div>

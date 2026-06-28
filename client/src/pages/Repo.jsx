@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { repoApi, sessionApi } from '../api/index.js';
 import { apiError } from '../api/http.js';
 import { toast } from '../components/Toast.jsx';
 import Empty from '../components/Empty.jsx';
+
+const SkeletonLoader = () => (
+  <div className="col" style={{ gap: 8 }}>
+    {[1, 2].map((n) => (
+      <div key={n} className="list-row skeleton" style={{ height: 70, border: 'none' }} />
+    ))}
+  </div>
+);
 
 export default function Repo() {
   const { repoId } = useParams();
@@ -58,44 +66,73 @@ export default function Repo() {
     }
   };
 
-  if (loading) return <div className="muted">Loading…</div>;
+  if (loading) {
+    return (
+      <div>
+        <div className="page-header">
+          <div>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Loading repository…</div>
+            <div className="skeleton" style={{ width: 240, height: 28 }} />
+          </div>
+        </div>
+        <SkeletonLoader />
+      </div>
+    );
+  }
+
   if (!repo) return <Empty icon="❓" title="Repository not found" />;
 
   return (
     <div>
-      <div className="topbar">
+      <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
+          <div className="muted" style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+            <Link to="/repos">Repositories</Link>
+            <span>›</span>
+            <span>{repo.fullName.split('/')[0]}</span>
+          </div>
           <h1>{repo.fullName}</h1>
-          <div className="muted">
-            {repo.provider} · {github ? 'live GitHub data' : 'demo PR data (connect GitHub for live)'}
+          <div className="page-subtitle" style={{ marginTop: 6 }}>
+            <span className={`badge ${github ? 'green' : 'muted'}`} style={{ height: 18, fontSize: 10, marginRight: 6 }}>
+              {repo.provider}
+            </span>
+            {github ? 'live GitHub data synced' : 'demo PR data (connect GitHub for live)'}
           </div>
         </div>
       </div>
 
-      <h2>Open pull requests</h2>
+      <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Open pull requests</h2>
+
       {pulls.length === 0 ? (
         <Empty icon="🔀" title="No open pull requests" />
       ) : (
-        pulls.map((pr) => (
-          <div key={pr.number} className="card" style={{ marginBottom: 12 }}>
-            <div className="row between">
-              <div className="grow">
-                <div className="row">
-                  <span className="badge green">#{pr.number}</span>
-                  {pr.draft && <span className="badge amber">draft</span>}
-                  <div style={{ fontWeight: 600 }}>{pr.title}</div>
+        <div className="col" style={{ gap: 8 }}>
+          {pulls.map((pr) => (
+            <div key={pr.number} className="list-row" style={{ margin: 0, padding: '12px 16px' }}>
+              <div className="grow" style={{ minWidth: 0 }}>
+                <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <span className="badge green" style={{ height: 18, fontSize: 10 }}>#{pr.number}</span>
+                  {pr.draft && <span className="badge amber" style={{ height: 18, fontSize: 10 }}>draft</span>}
+                  <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {pr.title}
+                  </div>
                 </div>
-                <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                   @{pr.author} · {pr.head} → {pr.base}
                   {' · '}+{pr.additions ?? 0} −{pr.deletions ?? 0}
                 </div>
               </div>
-              <button className="primary" onClick={() => startSession(pr)} disabled={starting === pr.number}>
-                {starting === pr.number ? <span className="spinner" /> : '▶ Start live review'}
+              <button
+                className="primary"
+                style={{ height: 28, fontSize: 12, padding: '0 10px' }}
+                onClick={() => startSession(pr)}
+                disabled={starting === pr.number}
+              >
+                {starting === pr.number ? <span className="spinner" /> : '▶ Review'}
               </button>
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

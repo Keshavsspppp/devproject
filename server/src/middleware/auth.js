@@ -8,17 +8,21 @@ import { ACCESS_COOKIE } from '../utils/tokens.js';
  * Does NOT fail when missing — use requireAuth for that.
  */
 export async function attachUser(req, _res, next) {
-  const token =
-    req.cookies?.[ACCESS_COOKIE] ||
-    (req.headers.authorization?.startsWith('Bearer ')
-      ? req.headers.authorization.slice(7)
-      : null);
-  if (token) {
-    const payload = verifyAccess(token);
-    if (payload?.sub) {
-      const user = await store.findUserById(payload.sub);
-      if (user) req.user = user;
+  try {
+    const token =
+      req.cookies?.[ACCESS_COOKIE] ||
+      (req.headers.authorization?.startsWith('Bearer ')
+        ? req.headers.authorization.slice(7)
+        : null);
+    if (token) {
+      const payload = verifyAccess(token);
+      if (payload?.sub) {
+        const user = await store.findUserById(payload.sub).catch(() => null);
+        if (user) req.user = user;
+      }
     }
+  } catch (e) {
+    console.error('[auth] attachUser middleware error:', e);
   }
   next();
 }
