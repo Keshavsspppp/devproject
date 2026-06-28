@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { threadApi, repoApi } from '../api/index.js';
+import { threadApi, repoApi, orgApi } from '../api/index.js';
 import { apiError } from '../api/http.js';
 import { toast } from '../components/Toast.jsx';
 import Empty from '../components/Empty.jsx';
@@ -8,32 +8,93 @@ import Empty from '../components/Empty.jsx';
 export default function Threads() {
   const [threads, setThreads] = useState([]);
   const [repos, setRepos] = useState([]);
+  const [orgs, setOrgs] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ repoId: '', title: '', body: '' });
 
-  const load = async () => {
+  const loadReposAndInitialThreads = async () => {
     setLoading(true);
     try {
-      const [t, r] = await Promise.all([threadApi.list(), repoApi.list()]);
-      setThreads(t.threads);
-      setRepos(r.repos);
-      if (r.repos[0] && !form.repoId) setForm((f) => ({ ...f, repoId: r.repos[0]._id }));
+      const [rRes, oRes] = await Promise.all([
+        repoApi.list(),
+        orgApi.list().catch(() => ({ orgs: [] }))
+      ]);
+      const fetchedRepos = rRes.repos || [];
+      const fetchedOrgs = oRes.orgs || [];
+      setRepos(fetchedRepos);
+      setOrgs(fetchedOrgs);
+
+      if (fetchedRepos.length === 0) {
+        setThreads([]);
+        setLoading(false);
+        return;
+      }
+
+      // Extract unique org IDs from the repos
+      const uniqueOrgIds = Array.from(
+        new Set(
+          fetchedRepos
+            .map((r) => (typeof r.org === 'object' ? r.org._id : r.org))
+            .filter(Boolean)
+        )
+      );
+
+      let orgId = selectedOrgId;
+      if (!orgId || !uniqueOrgIds.includes(orgId)) {
+        orgId = uniqueOrgIds[0] || '';
+        setSelectedOrgId(orgId);
+      }
+
+      if (orgId) {
+        const tRes = await threadApi.list({ orgId });
+        setThreads(tRes.threads || []);
+      } else {
+        setThreads([]);
+      }
+
+      if (fetchedRepos[0] && !form.repoId) {
+        setForm((f) => ({ ...f, repoId: fetchedRepos[0]._id }));
+      }
+    } catch (e) {
+      toast(apiError(e), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadThreadsForOrg = async (orgId) => {
+    setLoading(true);
+    try {
+      const tRes = await threadApi.list({ orgId });
+      setThreads(tRes.threads || []);
+    } catch (e) {
+      toast(apiError(e), 'error');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    loadReposAndInitialThreads();
   }, []);
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const handleOrgChange = async (orgId) => {
+    setSelectedOrgId(orgId);
+    await loadThreadsForOrg(orgId);
+  };
+
+  const submit = async () => {
+    if (!form.title.trim()) {
+      toast('Title is required', 'error');
+      return;
+    }
     try {
       const repo = repos.find((x) => x._id === form.repoId);
+      const repoOrgId = repo ? (typeof repo.org === 'object' ? repo.org._id : repo.org) : '';
       await threadApi.create({
-        orgId: repo?.org,
+        orgId: repoOrgId,
         repoId: form.repoId,
         title: form.title,
         body: form.body,
@@ -41,11 +102,30 @@ export default function Threads() {
       setForm({ repoId: repos[0]?._id || '', title: '', body: '' });
       setCreating(false);
       toast('Thread created', 'success');
-      load();
+      // Reload threads for the currently selected org
+      if (repoOrgId === selectedOrgId) {
+        loadThreadsForOrg(selectedOrgId);
+      } else {
+        // Switch to the org where the thread was created
+        handleOrgChange(repoOrgId);
+      }
     } catch (e) {
       toast(apiError(e), 'error');
     }
   };
+
+  const getOrgName = (orgId) => {
+    const o = orgs.find((x) => x._id === orgId);
+    return o ? o.name : orgId;
+  };
+
+  const uniqueOrgIds = Array.from(
+    new Set(
+      repos
+        .map((r) => (typeof r.org === 'object' ? r.org._id : r.org))
+        .filter(Boolean)
+    )
+  );
 
   return (
     <div>
@@ -54,13 +134,30 @@ export default function Threads() {
           <h1>Threads</h1>
           <div className="muted">Async discussions that persist beyond live sessions</div>
         </div>
-        <button className="primary" onClick={() => setCreating((v) => !v)}>
-          {creating ? 'Cancel' : '+ New thread'}
-        </button>
+        {repos.length > 0 && (
+          <button className="primary" onClick={() => setCreating((v) => !v)}>
+            {creating ? 'Cancel' : '+ New thread'}
+          </button>
+        )}
       </div>
 
-      {creating && (
-        <form className="card" style={{ marginBottom: 20 }} onSubmit={submit}>
+      {repos.length > 0 && uniqueOrgIds.length > 1 && (
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className="muted" style={{ fontSize: 13 }}>Organisation:</label>
+          <select
+            value={selectedOrgId}
+            onChange={(e) => handleOrgChange(e.target.value)}
+            style={{ width: 'auto', padding: '4px 8px' }}
+          >
+            {uniqueOrgIds.map((id) => (
+              <option key={id} value={id}>{getOrgName(id)}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {creating && repos.length > 0 && (
+        <div className="card" style={{ marginBottom: 20 }}>
           <div className="col">
             <div>
               <label className="muted">Repository</label>
@@ -76,13 +173,15 @@ export default function Threads() {
               <label className="muted">Details</label>
               <textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
             </div>
-            <button className="primary" type="submit" style={{ width: 'fit-content' }}>Create</button>
+            <button className="primary" style={{ width: 'fit-content' }} onClick={submit}>Create</button>
           </div>
-        </form>
+        </div>
       )}
 
       {loading ? (
         <div className="muted">Loading…</div>
+      ) : repos.length === 0 ? (
+        <Empty icon="📦" title="No repositories yet" sub="Create a repo first to start threads." />
       ) : threads.length === 0 ? (
         <Empty icon="💬" title="No threads yet" sub="Start an async discussion attached to a repo." />
       ) : (

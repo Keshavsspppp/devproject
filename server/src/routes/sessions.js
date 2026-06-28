@@ -140,10 +140,9 @@ router.patch(
     // Broadcast updated comment via socket so live clients sync
     const io = req.app.get('io');
     if (!io) {
-      console.warn('[warning] Socket.IO instance not set on Express app. Real-time comment:update event not broadcasted.');
-    } else {
-      io.of('/sessions').to(sessionId).emit('comment:update', updated);
+      console.warn('[sessions] io not available — comment:update not broadcast');
     }
+    io?.of('/sessions').to(sessionId).emit('comment:update', updated);
 
     res.json({ comment: updated });
   })

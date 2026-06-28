@@ -88,6 +88,7 @@ async function start() {
 
   const sessionApi = registerSessionHandlers(io);
   app.set('io', io);
+  console.log('[server] Socket.io attached to app');
   app.set('sessionApi', sessionApi);
 
   // bridge GitHub webhooks → live sessions
