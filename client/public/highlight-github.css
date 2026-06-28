@@ -1,0 +1,12 @@
+/* Minimal GitHub-ish highlight.js theme for AI markdown output. */
+.hljs{display:block;overflow-x:auto;padding:1em;color:#c9d1d9;background:#0d1117;border-radius:8px}
+.hljs-comment,.hljs-quote{color:#8b949e;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-type{color:#ff7b72}
+.hljs-string,.hljs-doctag,.hljs-regexp{color:#a5d6ff}
+.hljs-number,.hljs-built_in,.hljs-title,.hljs-section,.hljs-name{color:#d2a8ff}
+.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-template-variable{color:#79c0ff}
+.hljs-symbol,.hljs-bullet,.hljs-meta{color:#ffa657}
+.hljs-deletion{color:#ffa198;background:#67060c}
+.hljs-addition{color:#7ee787;background:#033a16}
+.hljs-emphasis{font-style:italic}
+.hljs-strong{font-weight:700}

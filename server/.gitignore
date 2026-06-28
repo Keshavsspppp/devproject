@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime output
+logs/
+*.log
+coverage/
+
+# Build output
+dist/
+build/
